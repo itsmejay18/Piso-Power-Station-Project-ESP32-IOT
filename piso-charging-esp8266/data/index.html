@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PISO CHARGE PRO</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section id="userPortal" class="screen user-screen">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-mark">PCP</span>
+          <div>
+            <h1>PISO CHARGE PRO</h1>
+            <p id="apLabel">10.20.30.1</p>
+          </div>
+        </div>
+        <a class="admin-link" href="/admin">ADMIN</a>
+      </header>
+
+      <section class="credit-panel">
+        <div>
+          <span class="eyebrow">AVAILABLE CREDIT</span>
+          <strong id="creditValue">00:00</strong>
+        </div>
+        <div class="coin-box">
+          <span>COINS</span>
+          <strong id="coinValue">0</strong>
+        </div>
+      </section>
+
+      <section id="portsGrid" class="ports-grid" aria-live="polite"></section>
+
+      <section class="action-row">
+        <button id="refreshBtn" class="btn secondary" type="button">REFRESH STATUS</button>
+        <p id="userMsg" class="message"></p>
+      </section>
+    </section>
+
+    <section id="adminLogin" class="screen login-screen hidden">
+      <form id="loginForm" class="panel login-card" method="post" action="/admin/api/login">
+        <img class="developer-photo" src="/developer.png" alt="Developer">
+        <span class="eyebrow">LOCAL ADMIN</span>
+        <h2>PISO CHARGE PRO</h2>
+        <label for="username">USERNAME</label>
+        <input id="username" name="username" autocomplete="username" value="admin" required>
+        <label for="password">PASSWORD</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="admin" required>
+        <button class="btn primary wide" type="submit">LOGIN</button>
+        <p id="loginMsg" class="message"></p>
+      </form>
+    </section>
+
+    <section id="adminDashboard" class="screen admin-screen hidden">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-mark">PCP</span>
+          <div>
+            <h1>PISO CHARGE PRO</h1>
+            <p>ADMIN DASHBOARD</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <a class="admin-link" href="/">USER</a>
+          <button id="logoutBtn" class="admin-link button-link" type="button">OUT</button>
+        </div>
+      </header>
+
+      <section class="admin-grid">
+        <article class="panel status-card">
+          <div class="section-head">
+            <span class="eyebrow">DEVICE STATUS</span>
+            <button id="adminRefreshBtn" class="btn small secondary" type="button">REFRESH</button>
+          </div>
+          <dl class="status-list">
+            <dt>IP</dt><dd id="adminIp">...</dd>
+            <dt>Uptime</dt><dd id="adminUptime">...</dd>
+            <dt>Coin pulses</dt><dd id="adminCoins">0</dd>
+            <dt>Credit</dt><dd id="adminCredit">00:00</dd>
+            <dt>Relay states</dt><dd id="adminRelays">...</dd>
+            <dt>Port timers</dt><dd id="adminTimers">...</dd>
+          </dl>
+        </article>
+
+        <article class="panel test-card">
+          <span class="eyebrow">MANUAL RELAY TEST</span>
+          <div class="test-buttons">
+            <button class="btn secondary" type="button" data-test-relay="1">TEST RELAY 1</button>
+            <button class="btn secondary" type="button" data-test-relay="2">TEST RELAY 2</button>
+            <button class="btn secondary" type="button" data-test-relay="3">TEST RELAY 3</button>
+          </div>
+          <p id="testMsg" class="message"></p>
+        </article>
+
+        <article class="panel settings-card">
+          <div class="section-head">
+            <span class="eyebrow">CONFIGURATION</span>
+            <button id="resetBtn" class="btn small danger" type="button">RESET DEFAULTS</button>
+          </div>
+
+          <form id="settingsForm" method="post" action="/admin/api/save-settings">
+            <div class="form-grid">
+              <div>
+                <label for="apSsid">AP SSID</label>
+                <input id="apSsid" name="apSsid" required>
+              </div>
+              <div>
+                <label for="apPassword">AP PASSWORD</label>
+                <input id="apPassword" name="apPassword" type="password" placeholder="Leave blank to keep current">
+              </div>
+              <div>
+                <label for="secondsPerCoin">SECONDS PER COIN</label>
+                <input id="secondsPerCoin" name="secondsPerCoin" type="number" min="10" max="86400" required>
+              </div>
+              <div>
+                <label for="relayActiveMode">RELAY ACTIVE MODE</label>
+                <select id="relayActiveMode" name="relayActiveMode">
+                  <option value="LOW">ACTIVE LOW</option>
+                  <option value="HIGH">ACTIVE HIGH</option>
+                </select>
+              </div>
+              <div>
+                <label for="relay1Pin">RELAY 1 PIN</label>
+                <select id="relay1Pin" name="relay1Pin"></select>
+              </div>
+              <div>
+                <label for="relay2Pin">RELAY 2 PIN</label>
+                <select id="relay2Pin" name="relay2Pin"></select>
+              </div>
+              <div>
+                <label for="relay3Pin">RELAY 3 PIN</label>
+                <select id="relay3Pin" name="relay3Pin"></select>
+              </div>
+              <div>
+                <label for="coinPin">COIN INPUT PIN</label>
+                <select id="coinPin" name="coinPin"></select>
+              </div>
+            </div>
+
+            <div class="enable-row">
+              <label class="checkline"><input id="port1Enabled" type="checkbox"> PORT 1 ENABLED</label>
+              <label class="checkline"><input id="port2Enabled" type="checkbox"> PORT 2 ENABLED</label>
+              <label class="checkline"><input id="port3Enabled" type="checkbox"> PORT 3 ENABLED</label>
+            </div>
+
+            <button class="btn primary wide" type="submit">SAVE SETTINGS</button>
+            <p id="settingsMsg" class="message"></p>
+          </form>
+        </article>
+      </section>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

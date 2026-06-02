@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BYG-PISOTAB PRO Setup</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <main class="app-shell">
+    <section id="loginPage" class="page login-page">
+      <form id="loginForm" class="panel login-card corner-card" method="post" action="/api/login">
+        <div class="bar"></div>
+        <div class="brand brand-shell login-brand">
+          <img class="brand-logo" src="/portal_logo.png" alt="BYG-PISOTAB PRO">
+          <div>
+            <div class="brand-name">BYG-PISOTAB</div>
+            <div class="brand-pro">PRO SETUP</div>
+          </div>
+        </div>
+
+        <h1>SYSTEM ACCESS</h1>
+        <p class="muted">Enter local setup credentials</p>
+
+        <label for="username">USERNAME</label>
+        <input id="username" name="username" autocomplete="username" placeholder="admin" required>
+
+        <label for="password">PASSWORD</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Portal password" required>
+
+        <button class="btn btn-red" type="submit">LOGIN TO SYSTEM</button>
+        <p id="loginMsg" class="message"></p>
+        <div class="version">BYG-PISOTAB PRO - ESP8266 PORTAL</div>
+      </form>
+    </section>
+
+    <section id="dashboardPage" class="page dashboard-page hidden">
+      <header class="dash-header panel">
+        <div class="header-left">
+          <button id="menuBtn" class="menu-btn" type="button" aria-label="Open settings menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div class="brand brand-shell">
+            <img class="brand-logo" src="/portal_logo.png" alt="BYG-PISOTAB PRO">
+            <div>
+              <div class="brand-name">BYG-PISOTAB</div>
+              <div class="brand-pro">PRO SETUP</div>
+            </div>
+          </div>
+        </div>
+        <button id="logoutBtn" class="logout-btn" type="button" title="Logout" aria-label="Logout">OUT</button>
+      </header>
+
+      <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+      <div class="admin-layout">
+        <nav id="adminNav" class="admin-nav panel" aria-label="Admin settings pages">
+          <div class="nav-kicker">SETTINGS</div>
+          <button class="nav-link active" type="button" data-page="networksPage">Nearby WiFi</button>
+          <button class="nav-link" type="button" data-page="wifiPage">WiFi Setup</button>
+          <button class="nav-link" type="button" data-page="statusPage">Device Status</button>
+          <button class="nav-link" type="button" data-page="chargePage">Smart Charging</button>
+          <button class="nav-link" type="button" data-page="pinsPage">Pin Configuration</button>
+          <button class="nav-link" type="button" data-page="actionsPage">Device Actions</button>
+          <button class="nav-link" type="button" data-page="passwordPage">Portal Password</button>
+        </nav>
+
+        <div class="dashboard-main">
+          <section id="wifiPage" class="page-panel">
+            <article class="panel setup-card corner-card">
+              <div class="section-title">
+                <div>
+                  <h2>WiFi Setup</h2>
+                  <p class="muted">Set the router gateway and portal IP.</p>
+                </div>
+                <button id="scanBtn" class="btn btn-blue" type="button">SCAN WIFI</button>
+              </div>
+
+              <form id="settingsForm" class="setup-form" method="post" action="/api/settings">
+                <label for="ssid">WIFI SSID</label>
+                <input id="ssid" name="ssid" placeholder="Your router SSID" required>
+
+                <label for="wifiPassword">WIFI PASSWORD</label>
+                <input id="wifiPassword" name="password" type="password" placeholder="Router password">
+
+                <div class="form-grid">
+                  <div>
+                    <label for="gateway">ROUTER GATEWAY</label>
+                    <input id="gateway" name="gateway" inputmode="numeric" placeholder="192.168.0.1" required>
+                  </div>
+                  <div>
+                    <label for="staticIp">PORTAL IP</label>
+                    <input id="staticIp" name="staticIp" inputmode="numeric" placeholder="192.168.0.100">
+                  </div>
+                </div>
+
+                <button id="saveBtn" class="btn btn-red wide" type="submit">SAVE AND REBOOT</button>
+              </form>
+              <p id="saveMsg" class="message"></p>
+            </article>
+          </section>
+
+          <section id="chargePage" class="page-panel">
+            <article class="panel charge-card">
+              <h2>Smart Charging</h2>
+              <p class="muted">Set when the relay starts and stops tablet charging.</p>
+              <form id="chargeForm" class="charge-form" method="post" action="/api/charge">
+                <div class="form-grid">
+                  <div>
+                    <label for="chargeOn">RESUME CHARGING AT %</label>
+                    <input id="chargeOn" name="on" type="number" min="0" max="99" value="40" required>
+                  </div>
+                  <div>
+                    <label for="chargeOff">STOP CHARGING AT %</label>
+                    <input id="chargeOff" name="off" type="number" min="1" max="100" value="90" required>
+                  </div>
+                </div>
+                <button id="chargeSaveBtn" class="btn btn-blue wide" type="submit">SAVE CHARGING</button>
+              </form>
+              <p id="chargeMsg" class="message"></p>
+            </article>
+          </section>
+
+          <section id="pinsPage" class="page-panel">
+            <article class="panel pin-card">
+              <h2>Pin Configuration</h2>
+              <p class="muted">Choose safe ESP8266 pins for relay and Allan trigger.</p>
+              <form id="pinForm" class="pin-form" method="post" action="/api/pins">
+                <div class="form-grid">
+                  <div>
+                    <label for="relayPin">RELAY PIN</label>
+                    <select id="relayPin" name="relayPin" required>
+                      <option value="D1">D1 / GPIO5</option>
+                      <option value="D2">D2 / GPIO4</option>
+                      <option value="D5">D5 / GPIO14</option>
+                      <option value="D6">D6 / GPIO12</option>
+                      <option value="D7">D7 / GPIO13</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="relayActiveLevel">RELAY ACTIVE</label>
+                    <select id="relayActiveLevel" name="relayActiveLevel" required>
+                      <option value="LOW">LOW</option>
+                      <option value="HIGH">HIGH</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="triggerPin">ALLAN TRIGGER PIN</label>
+                    <select id="triggerPin" name="triggerPin" required>
+                      <option value="D2">D2 / GPIO4</option>
+                      <option value="D1">D1 / GPIO5</option>
+                      <option value="D5">D5 / GPIO14</option>
+                      <option value="D6">D6 / GPIO12</option>
+                      <option value="D7">D7 / GPIO13</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="triggerActiveLevel">TRIGGER ACTIVE</label>
+                    <select id="triggerActiveLevel" name="triggerActiveLevel" required>
+                      <option value="LOW">LOW</option>
+                      <option value="HIGH">HIGH</option>
+                    </select>
+                  </div>
+                </div>
+                <button id="pinSaveBtn" class="btn btn-blue wide" type="submit">SAVE PINS AND REBOOT</button>
+              </form>
+              <p id="pinMsg" class="message"></p>
+            </article>
+          </section>
+
+          <section id="statusPage" class="page-panel">
+            <section class="status-grid">
+              <article class="stat-card">
+                <span>MODE</span>
+                <strong id="modeValue">...</strong>
+              </article>
+              <article class="stat-card">
+                <span>IP ADDRESS</span>
+                <strong id="ipValue">...</strong>
+              </article>
+              <article class="stat-card">
+                <span>SSID</span>
+                <strong id="ssidValue">...</strong>
+              </article>
+              <article class="stat-card">
+                <span>SMART CHARGE</span>
+                <strong id="chargeValue">...</strong>
+              </article>
+            </section>
+
+            <article class="panel info-card">
+              <h2>Device Status</h2>
+              <dl>
+                <dt>Board</dt><dd id="boardValue">...</dd>
+                <dt>Current mode</dt><dd id="modeDetail">...</dd>
+                <dt>Current IP</dt><dd id="ipDetail">...</dd>
+                <dt>Connected SSID</dt><dd id="ssidDetail">...</dd>
+                <dt>Uptime</dt><dd id="uptimeValue">...</dd>
+                <dt>Tablet battery</dt><dd id="batteryValue">Waiting</dd>
+                <dt>Relay state</dt><dd id="relayValue">...</dd>
+                <dt>Allan trigger</dt><dd id="allanDetail">...</dd>
+                <dt>Resume / stop</dt><dd id="thresholdValue">...</dd>
+              </dl>
+            </article>
+          </section>
+
+          <section id="networksPage" class="page-panel active">
+            <article class="panel networks-card">
+              <div class="section-title">
+                <div>
+                  <h2>Nearby WiFi</h2>
+                  <p class="muted">Scan and tap a network to fill the WiFi SSID.</p>
+                </div>
+                <button id="scanPageBtn" class="btn btn-blue" type="button">SCAN WIFI</button>
+              </div>
+              <div id="scanList" class="scan-list muted">Tap Scan WiFi to list networks.</div>
+            </article>
+          </section>
+
+          <section id="actionsPage" class="page-panel">
+            <article class="panel actions-card">
+              <h2>Device Actions</h2>
+              <button id="rebootBtn" class="btn btn-blue wide" type="button">REBOOT</button>
+              <button id="resetBtn" class="btn btn-ghost danger wide" type="button">RESET SETUP</button>
+            </article>
+          </section>
+
+          <section id="passwordPage" class="page-panel">
+            <article class="panel password-card">
+              <h2>Portal Password</h2>
+              <p class="muted">Change the local setup login password.</p>
+              <form id="passwordForm" class="password-form" method="post" action="/api/password">
+                <label for="currentPassword">CURRENT PASSWORD</label>
+                <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required>
+
+                <label for="newPassword">NEW PASSWORD</label>
+                <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="4" required>
+
+                <label for="confirmPassword">CONFIRM PASSWORD</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="4" required>
+
+                <button id="passwordSaveBtn" class="btn btn-blue wide" type="submit">CHANGE PASSWORD</button>
+              </form>
+              <p id="passwordMsg" class="message"></p>
+            </article>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
