@@ -1,0 +1,206 @@
+Build a complete ESP8266 Piso Charging Station AP Portal firmware.
+
+Target board:
+- ESP8266 NodeMCU / Wemos D1 Mini
+- Arduino framework
+- Output should be flashable as .bin firmware
+- Use PlatformIO project structure if possible
+
+Main goal:
+Create an ESP8266 Access Point web portal at static IP 10.20.30.1 for a piso charging station with relays and coin input.
+
+WiFi/AP requirements:
+- ESP8266 runs in AP mode
+- SSID: PISO_CHARGE_PRO
+- Password: 12345678
+- Static AP IP: 10.20.30.1
+- Gateway: 10.20.30.1
+- Subnet: 255.255.255.0
+- User opens: http://10.20.30.1
+- Admin opens: http://10.20.30.1/admin
+- Add captive portal DNS redirect if possible, so any URL redirects to 10.20.30.1
+
+User portal requirements:
+- Public user page at /
+- Show available charging ports
+- Show coin credit / inserted coin count
+- User can select Port 1, Port 2, or Port 3
+- When user has coin credit and selects a port, activate that relay
+- Show active port status and remaining charging time
+- Add buttons:
+  - Start Port 1
+  - Start Port 2
+  - Start Port 3
+  - Refresh Status
+- Use simple responsive HTML/CSS/JavaScript directly served by ESP8266
+- No external CDN because ESP8266 AP has no internet
+
+Admin requirements:
+- Admin route: /admin
+- Admin login route: /admin/login
+- Default credentials:
+  - username: admin
+  - password: admin
+- Use simple session token/cookie
+- Admin dashboard should allow changing:
+  - relay 1 GPIO pin
+  - relay 2 GPIO pin
+  - relay 3 GPIO pin
+  - coin input GPIO pin
+  - relay active mode: active LOW or active HIGH
+  - seconds per coin pulse
+  - AP SSID
+  - AP password
+- Save settings using LittleFS or EEPROM so settings remain after reboot
+- Add reset-to-default settings button
+- Add relay manual test buttons in admin:
+  - Test relay 1
+  - Test relay 2
+  - Test relay 3
+- Add status display:
+  
+  - uptime
+  - current IP
+  - relay states
+  - coin pulses
+  - remaining seconds per port
+
+Hardware defaults:
+- Relay 1: D1 / GPIO5
+- Relay 2: D2 / GPIO4
+- Relay 3: D5 / GPIO14
+- Coin input: D6 / GPIO12
+- Avoid using boot-sensitive pins for relays:
+  - GPIO0 / D3
+  - GPIO2 / D4
+  - GPIO15 / D8
+
+Coin input behavior:
+- Coin acceptor/timer gives pulse to coin input pin
+- Use interrupt or debounced polling
+- Every valid pulse adds seconds_per_coin to available credit
+- Default seconds_per_coin: 300 seconds
+- Add debounce protection, example 50ms to 200ms
+- Store coin pulse count in RAM
+- Do not write coin count to flash every pulse to avoid flash wear
+
+Relay/timer behavior:
+- Each port has:
+  - relay pin
+  - enabled/disabled
+  - remaining seconds
+  - active/inactive status
+- If credit is available and user starts a port:
+  - transfer available credit seconds to selected port
+  - turn relay ON
+  - set available credit to 0
+- Countdown every second
+- When remaining time reaches 0, turn relay OFF
+- Multiple ports may run independently
+- If user inserts more coins while a port is already active, allow adding credit then user can add it to an active port or another port
+
+API routes:
+- GET /api/status
+  Return JSON:
+  {
+    "creditSeconds": number,
+    "coinPulses": number,
+    "ports": [
+      {"id":1,"enabled":true,"active":true,"remaining":123},
+      {"id":2,"enabled":true,"active":false,"remaining":0},
+      {"id":3,"enabled":true,"active":false,"remaining":0}
+    ],
+    "uptime": number,
+    "freeHeap": number
+  }
+
+- POST /api/start
+  Body or query:
+  port=1
+  Start selected port if creditSeconds > 0 and port is enabled
+
+- POST /api/add-credit-to-port
+  Body or query:
+  port=1
+  Add available credit to selected active or inactive port
+
+- POST /admin/api/login
+  username and password
+
+- POST /admin/api/save-settings
+  Save settings
+
+- POST /admin/api/reset-settings
+  Reset defaults
+
+- POST /admin/api/test-relay
+  relay=1
+
+Security:
+- Admin pages and admin APIs must require login
+- User portal should not expose pin settings
+- Keep code simple but not completely open admin APIs
+
+Project structure:
+Use PlatformIO:
+
+piso-charging-esp8266/
+├── platformio.ini
+├── src/
+│   └── main.cpp
+├── data/
+│   └── optional files if using LittleFS
+└── README.md
+
+platformio.ini:
+- board = nodemcuv2
+- framework = arduino
+- platform = espressif8266
+- monitor_speed = 115200
+- build flags if needed
+
+Build output:
+- Explain how to build:
+  pio run
+- Explain where the .bin is generated:
+  .pio/build/nodemcuv2/firmware.bin
+- Explain how to upload:
+  pio run --target upload
+- Also explain how to flash manually using esptool.py:
+  esptool.py --port COMx --baud 460800 write_flash 0x00000 .pio/build/nodemcuv2/firmware.bin
+
+Important implementation notes:
+- Use ESP8266WebServer
+- Use DNSServer for captive portal
+- Use LittleFS for saved settings if stable
+- If LittleFS is too complex, use EEPROM with JSON-like struct
+- Use millis() for timers, never delay() for main logic
+- Use safe relay initialization:
+  - configure relay pins
+  - immediately set relay OFF before normal operation
+- Add Serial logs:
+  - AP started
+  - IP address
+  - coin pulse detected
+  - port started
+  - relay state changes
+  - settings saved
+
+UI design:
+- Make the portal clean and responsive
+- Dark modern style
+- Big readable buttons
+- Status cards for Port 1, Port 2, Port 3
+- Remaining time displayed as MM:SS
+- Admin page should have forms/cards for configuration
+
+Deliverables:
+1. Complete PlatformIO project code
+2. Full src/main.cpp
+3. platformio.ini
+4. README with wiring table
+5. Build and flashing instructions
+6. Notes about safe AC wiring and relay usage
+
+Safety reminder:
+Add clear comments that AC mains wiring must be isolated, fused, enclosed, and handled safely. Recommend switching charger input or low-voltage USB modules instead of exposed outlet wiring.
