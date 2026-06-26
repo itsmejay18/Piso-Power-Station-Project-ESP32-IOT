@@ -23,20 +23,6 @@
         <a class="logout-btn admin-shortcut" href="/admin" title="Admin" aria-label="Admin">ADM</a>
       </header>
 
-      <section class="hero-grid">
-        <article class="panel credit-card corner-card">
-          <div class="bar"></div>
-          <span class="kicker">AVAILABLE CREDIT</span>
-          <strong id="creditValue">00:00</strong>
-          <small id="apLabel">PISO_CHARGE_PRO / 10.20.30.1</small>
-        </article>
-        <article class="coin-card">
-          <span>TOTAL PHP</span>
-          <strong id="coinValue">0</strong>
-          <small id="coinMeta">Last coin: --</small>
-        </article>
-      </section>
-
       <section id="portsGrid" class="ports-grid" aria-live="polite"></section>
 
       <section class="action-row panel">
@@ -44,19 +30,31 @@
         <p id="userMsg" class="message"></p>
       </section>
 
-      <section class="action-row panel bench-panel">
-        <div class="test-buttons coin-buttons">
-          <button class="btn btn-blue" type="button" data-sim-coin="1">SIM PHP 1</button>
-          <button class="btn btn-blue" type="button" data-sim-coin="5">SIM PHP 5</button>
-          <button class="btn btn-blue" type="button" data-sim-coin="10">SIM PHP 10</button>
-          <button class="btn btn-blue" type="button" data-sim-coin="20">SIM PHP 20</button>
-        </div>
-        <div class="test-buttons">
-          <button class="btn btn-red" type="button" data-test-time-port="1">TEST TIME PORT 1</button>
-          <button class="btn btn-red" type="button" data-test-time-port="2">TEST TIME PORT 2</button>
-          <button class="btn btn-red" type="button" data-test-time-port="3">TEST TIME PORT 3</button>
-        </div>
-        <p id="simMsg" class="message"></p>
+      <section id="paymentModal" class="payment-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalPortLabel">
+        <div id="paymentBackdrop" class="payment-backdrop"></div>
+        <article class="payment-dialog panel corner-card">
+          <div class="bar"></div>
+          <div class="modal-head">
+            <span class="kicker">INSERT COIN</span>
+            <h1 id="modalPortLabel">PORT -</h1>
+          </div>
+          <div class="payment-readout">
+            <div>
+              <span>INSERTED</span>
+              <strong id="modalCoinAmount">PHP 0</strong>
+            </div>
+            <div>
+              <span>TIME</span>
+              <strong id="modalTimeAmount">00:00</strong>
+            </div>
+          </div>
+          <p id="modalPulseMeta" class="pulse-meta">Last coin: --</p>
+          <div class="modal-actions">
+            <button id="donePayingBtn" class="btn btn-red" type="button" disabled>DONE PAYING</button>
+            <button id="cancelPaymentBtn" class="btn btn-ghost" type="button">CANCEL</button>
+          </div>
+          <p id="paymentMsg" class="message"></p>
+        </article>
       </section>
     </section>
 
@@ -75,7 +73,7 @@
         <p class="muted">Enter local charging station credentials</p>
 
         <label for="username">USERNAME</label>
-        <input id="username" name="username" autocomplete="username" value="admin" placeholder="admin" required>
+        <input id="username" name="username" autocomplete="username" placeholder="Username" required>
 
         <label for="password">PASSWORD</label>
         <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Portal password" required>
@@ -114,9 +112,12 @@
         <nav id="adminNav" class="admin-nav panel" aria-label="Admin settings pages">
           <div class="nav-kicker">SETTINGS</div>
           <button class="nav-link active" type="button" data-page="statusPage">Device Status</button>
+          <button class="nav-link" type="button" data-page="salesPage">Sales</button>
           <button class="nav-link" type="button" data-page="portsPage">Ports</button>
+          <button class="nav-link" type="button" data-page="ratesPage">Rates</button>
           <button class="nav-link" type="button" data-page="pinsPage">Pin Configuration</button>
           <button class="nav-link" type="button" data-page="networkPage">Access Point</button>
+          <button class="nav-link" type="button" data-page="securityPage">Security</button>
           <button class="nav-link" type="button" data-page="actionsPage">Device Actions</button>
         </nav>
 
@@ -151,11 +152,35 @@
               </div>
               <dl>
                 <dt>Coin pulses</dt><dd id="adminCoinPulses">0</dd>
+                <dt>Coin input</dt><dd id="adminCoinInput">HIGH</dd>
+                <dt>Allan relay</dt><dd id="adminAllanRelay">OFF</dd>
+                <dt>Payment lock</dt><dd id="adminPaymentLock">--</dd>
                 <dt>Last coin</dt><dd id="adminLastCoin">--</dd>
                 <dt>Relay states</dt><dd id="adminRelays">...</dd>
                 <dt>Port timers</dt><dd id="adminTimers">...</dd>
               </dl>
             </article>
+          </section>
+
+          <section id="salesPage" class="page-panel">
+            <section class="sales-grid">
+              <article class="stat-card sales-card">
+                <span>DAY SALES</span>
+                <strong id="salesDay">PHP 0</strong>
+              </article>
+              <article class="stat-card sales-card">
+                <span>WEEK SALES</span>
+                <strong id="salesWeek">PHP 0</strong>
+              </article>
+              <article class="stat-card sales-card">
+                <span>MONTH SALES</span>
+                <strong id="salesMonth">PHP 0</strong>
+              </article>
+              <article class="stat-card sales-card">
+                <span>YEAR SALES</span>
+                <strong id="salesYear">PHP 0</strong>
+              </article>
+            </section>
           </section>
 
           <section id="portsPage" class="page-panel">
@@ -167,47 +192,30 @@
                 <label class="checkline"><input id="port2Enabled" type="checkbox"> PORT 2 ENABLED</label>
                 <label class="checkline"><input id="port3Enabled" type="checkbox"> PORT 3 ENABLED</label>
               </div>
+              <div>
+                <label for="relayActiveMode">RELAY ACTIVE MODE</label>
+                <select id="relayActiveMode" name="relayActiveMode" form="settingsForm">
+                  <option value="LOW">ACTIVE LOW</option>
+                  <option value="HIGH">ACTIVE HIGH</option>
+                </select>
+              </div>
+            </article>
+          </section>
+
+          <section id="ratesPage" class="page-panel">
+            <article class="panel setup-card">
+              <h2>Rate Settings</h2>
+              <p class="muted">Set how much charging time PHP 1 gives.</p>
               <div class="form-grid">
                 <div>
-                  <label for="secondsPerCoin">SECONDS PER PESO</label>
+                  <label for="secondsPerCoin">1 PISO TIME IN SECONDS</label>
                   <input id="secondsPerCoin" name="secondsPerCoin" type="number" min="10" max="86400" required form="settingsForm">
                 </div>
-                <div>
-                  <label for="relayActiveMode">RELAY ACTIVE MODE</label>
-                  <select id="relayActiveMode" name="relayActiveMode" form="settingsForm">
-                    <option value="LOW">ACTIVE LOW</option>
-                    <option value="HIGH">ACTIVE HIGH</option>
-                  </select>
+                <div class="rate-preview">
+                  <span>PHP 1 TIME</span>
+                  <strong id="ratePreview">05:00</strong>
                 </div>
               </div>
-            </article>
-
-            <article class="panel test-card">
-              <h2>Manual Relay Test</h2>
-              <p class="muted">Pulse a relay for quick hardware checking.</p>
-              <div class="test-buttons">
-                <button class="btn btn-blue" type="button" data-test-relay="1">TEST RELAY 1</button>
-                <button class="btn btn-blue" type="button" data-test-relay="2">TEST RELAY 2</button>
-                <button class="btn btn-blue" type="button" data-test-relay="3">TEST RELAY 3</button>
-              </div>
-              <p id="testMsg" class="message"></p>
-            </article>
-
-            <article class="panel test-card">
-              <h2>Coin / Time Simulation</h2>
-              <p class="muted">Use this while testing without a coin acceptor.</p>
-              <div class="test-buttons coin-buttons">
-                <button class="btn btn-blue" type="button" data-sim-coin="1">SIM PHP 1</button>
-                <button class="btn btn-blue" type="button" data-sim-coin="5">SIM PHP 5</button>
-                <button class="btn btn-blue" type="button" data-sim-coin="10">SIM PHP 10</button>
-                <button class="btn btn-blue" type="button" data-sim-coin="20">SIM PHP 20</button>
-              </div>
-              <div class="test-buttons">
-                <button class="btn btn-red" type="button" data-test-time-port="1">ADD TEST TIME PORT 1</button>
-                <button class="btn btn-red" type="button" data-test-time-port="2">ADD TEST TIME PORT 2</button>
-                <button class="btn btn-red" type="button" data-test-time-port="3">ADD TEST TIME PORT 3</button>
-              </div>
-              <p id="adminSimMsg" class="message"></p>
             </article>
           </section>
 
@@ -227,6 +235,10 @@
                 <div>
                   <label for="relay3Pin">RELAY 3 PIN</label>
                   <select id="relay3Pin" name="relay3Pin" form="settingsForm"></select>
+                </div>
+                <div>
+                  <label for="allanRelayPin">ALLAN TIMER RELAY PIN</label>
+                  <select id="allanRelayPin" name="allanRelayPin" form="settingsForm"></select>
                 </div>
                 <div>
                   <label for="coinPin">COIN INPUT PIN</label>
@@ -252,6 +264,27 @@
                 <div>
                   <label for="apPassword">AP PASSWORD</label>
                   <input id="apPassword" name="apPassword" type="password" placeholder="Leave blank to keep current" form="settingsForm">
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section id="securityPage" class="page-panel">
+            <article class="panel setup-card corner-card">
+              <div class="section-title">
+                <div>
+                  <h2>Admin Access</h2>
+                  <p class="muted">Set the local admin login credentials.</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div>
+                  <label for="adminUsername">ADMIN USERNAME</label>
+                  <input id="adminUsername" name="adminUsername" autocomplete="username" required form="settingsForm">
+                </div>
+                <div>
+                  <label for="adminPassword">ADMIN PASSWORD</label>
+                  <input id="adminPassword" name="adminPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep current" form="settingsForm">
                 </div>
               </div>
             </article>

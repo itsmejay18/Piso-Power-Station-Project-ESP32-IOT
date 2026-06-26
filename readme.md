@@ -2,7 +2,7 @@
 
 ESP8266 Access Point portal firmware for a coin-operated piso charging station.
 
-The ESP8266 runs offline in AP mode only. It does not connect to the internet. The coin input reads an active-LOW pulse train from the coin acceptor or Allan timer, then the user assigns available credit to Port 1, Port 2, or Port 3 from `http://10.20.30.1`.
+The ESP8266 runs offline in AP mode only. It does not connect to the internet. The user selects Port 1, Port 2, or Port 3 from `http://10.20.30.1`, inserts coins while that port payment modal is open, then presses `DONE PAYING` to start the selected relay timer. A running port is owned by the client IP that paid for it, so only that same device can add more time to that port. Other devices can still insert coins for other ready ports.
 
 ## Default Access
 
@@ -16,22 +16,25 @@ The ESP8266 runs offline in AP mode only. It does not connect to the internet. T
 | Admin username | `admin` |
 | Admin password | `admin` |
 
+Change the admin username/password from Admin > Security. Admin > Sales shows day, week, month, and year PHP totals from real coin pulses.
+
 ## Wiring Defaults
 
 | Function | NodeMCU Pin | GPIO |
 | --- | --- | --- |
 | Relay 1 | D1 | GPIO5 |
 | Relay 2 | D2 | GPIO4 |
-| Relay 3 | D5 | GPIO14 |
+| Relay 3 | D3 | GPIO0 |
+| Allan timer relay | D5 | GPIO14 |
 | Coin input | D6 | GPIO12 |
 
-Avoid using boot-sensitive pins for relays: D3/GPIO0, D4/GPIO2, and D8/GPIO15.
+Relay 3 uses D3/GPIO0 because this build is wired for D1, D2, and D3 relay triggers. D5 is reserved for the Allan timer/coin acceptor power relay, and D6 stays as the pulse input.
 
-Relay modules are initialized OFF during boot. Default relay mode is active HIGH, so relays energize only when paid time is assigned to a port or during manual relay test.
+Relay modules are initialized OFF during boot. Default relay mode is active LOW, so relay GPIOs idle HIGH and common LOW-trigger relay modules stay OFF until paid time is assigned to a port. If your relay board is HIGH-trigger, change Admin > Ports > Relay Active Mode to `ACTIVE HIGH`.
 
 ## Coin Reading
 
-The coin input groups pulses into one coin after the pulse train stops. Supported denominations:
+D6 uses `INPUT_PULLUP`, so the coin input idles HIGH and counts clean HIGH-to-LOW falling-edge pulses. The firmware filters fast repeat edges so one noisy pulse is not counted as multiple coins. The optimized reader prioritizes the interrupt queue before web requests, closes coin trains quickly, and can recover merged back-to-back pulse trains. Supported denominations:
 
 | Pulses read | Coin value |
 | --- | --- |
@@ -40,9 +43,11 @@ The coin input groups pulses into one coin after the pulse train stops. Supporte
 | 10 pulses | PHP 10 |
 | 20 pulses | PHP 20 |
 
-The admin setting `SECONDS PER PESO` controls the time multiplier. For example, `300` means PHP 1 adds 5 minutes, PHP 5 adds 25 minutes, PHP 10 adds 50 minutes, and PHP 20 adds 100 minutes.
+The Admin > Rates setting `1 PISO TIME IN SECONDS` controls the time multiplier. For example, `300` means PHP 1 adds 5 minutes, PHP 5 adds 25 minutes, PHP 10 adds 50 minutes, and PHP 20 adds 100 minutes.
 
-For bench testing without a working coin acceptor, use `SIM PHP 1/5/10/20` on the user page to add available credit. The `TEST TIME PORT 1/2/3` buttons add one peso worth of time directly to a relay output.
+When a port payment modal opens, the Allan timer relay on D5 turns ON so the coin acceptor/timer is powered. Coins inserted while that modal is open are displayed in that modal through D6 pulse reading. The selected port relay does not turn ON until `DONE PAYING` is pressed. When payment is finished or an empty payment is canceled, D5 turns OFF again. While that modal is open, the selected port/payment is IP-locked; other devices see the ports as in use.
+
+After a port starts charging, that port keeps the payer's IP address until its timer reaches zero. During that time, the owner device sees `ADD TIME`; other devices see that port as `IN USE`, but they can still use any other ready port.
 
 ## Portal Files
 
@@ -116,22 +121,30 @@ Returns:
 
 ```json
 {
-  "creditSeconds": 300,
+  "creditSeconds": 0,
+  "unassignedCoinValue": 0,
   "coinPulses": 1,
   "coinValueTotal": 1,
   "lastCoinValue": 1,
   "pendingCoinPulses": 0,
+  "paymentActive": true,
+  "paymentPort": 1,
+  "paymentCoinValue": 1,
+  "paymentSeconds": 300,
+  "paymentOwnerIp": "10.20.30.2",
+  "clientIp": "10.20.30.2",
+  "paymentOwnedByClient": true,
   "ports": [
-    {"id": 1, "enabled": true, "active": true, "remaining": 123},
-    {"id": 2, "enabled": true, "active": false, "remaining": 0},
-    {"id": 3, "enabled": true, "active": false, "remaining": 0}
+    {"id": 1, "enabled": true, "active": true, "remaining": 299, "ownerIp": "10.20.30.2", "ownedByClient": true, "lockedForClient": false},
+    {"id": 2, "enabled": true, "active": false, "remaining": 0, "ownerIp": "", "ownedByClient": false, "lockedForClient": false},
+    {"id": 3, "enabled": true, "active": false, "remaining": 0, "ownerIp": "", "ownedByClient": false, "lockedForClient": false}
   ],
   "uptime": 60,
   "freeHeap": 40000
 }
 ```
 
-### POST `/api/start`
+### POST `/api/payment-begin`
 
 Form body:
 
@@ -139,9 +152,9 @@ Form body:
 port=1
 ```
 
-Transfers available credit seconds to the selected port and turns its relay ON.
+Opens the payment modal/session for the selected port.
 
-### POST `/api/add-credit-to-port`
+### POST `/api/payment-finish`
 
 Form body:
 
@@ -149,7 +162,11 @@ Form body:
 port=1
 ```
 
-Adds available credit seconds to an active or inactive port.
+Moves the paid modal time to the selected port timer and turns that relay ON.
+
+### POST `/api/payment-cancel`
+
+Closes an empty payment session. A session with paid coins must be finished with `DONE PAYING`.
 
 ### Admin APIs
 
@@ -159,7 +176,6 @@ Admin APIs require login cookie from `/admin/api/login`.
 - `GET /admin/api/settings`
 - `POST /admin/api/save-settings`
 - `POST /admin/api/reset-settings`
-- `POST /admin/api/test-relay`
 
 ## Safety
 

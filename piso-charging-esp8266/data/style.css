@@ -31,6 +31,10 @@ body.nav-open {
   overflow: hidden;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select {
@@ -219,39 +223,6 @@ h2 {
   letter-spacing: .16em;
 }
 
-.hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.credit-card {
-  min-width: 0;
-  padding: 22px;
-  overflow: hidden;
-}
-
-#creditValue {
-  display: block;
-  margin-top: 8px;
-  color: white;
-  font-size: clamp(44px, 12vw, 88px);
-  line-height: .95;
-  font-weight: 900;
-  text-shadow: 0 0 22px rgba(0, 212, 255, .36);
-}
-
-.credit-card small {
-  display: block;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-  overflow-wrap: anywhere;
-}
-
-.coin-card,
 .stat-card,
 .port-card {
   min-width: 0;
@@ -260,14 +231,6 @@ h2 {
   box-shadow: inset 0 0 18px rgba(0, 212, 255, .04);
 }
 
-.coin-card {
-  display: grid;
-  align-content: center;
-  padding: 18px;
-  text-align: center;
-}
-
-.coin-card span,
 .stat-card span {
   display: block;
   color: var(--muted);
@@ -276,24 +239,12 @@ h2 {
   letter-spacing: .12em;
 }
 
-.coin-card strong,
 .stat-card strong {
   display: block;
   margin-top: 8px;
   color: white;
   overflow-wrap: anywhere;
   text-shadow: 0 0 16px rgba(0, 212, 255, .35);
-}
-
-.coin-card strong {
-  color: var(--amber);
-  font-size: 44px;
-}
-
-.coin-card small {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .ports-grid {
@@ -308,6 +259,15 @@ h2 {
 
 .port-card.disabled {
   opacity: .56;
+}
+
+.port-card.paying {
+  border-color: rgba(255, 204, 51, .7);
+  box-shadow: 0 0 22px rgba(255, 204, 51, .12), inset 0 0 18px rgba(255, 204, 51, .05);
+}
+
+.port-card.locked {
+  opacity: .68;
 }
 
 .port-head {
@@ -340,6 +300,18 @@ h2 {
   color: var(--green);
   background: rgba(0, 255, 136, .08);
   box-shadow: 0 0 16px rgba(0, 255, 136, .16);
+}
+
+.status-pill.paying {
+  border-color: rgba(255, 204, 51, .7);
+  color: var(--amber);
+  background: rgba(255, 204, 51, .08);
+}
+
+.status-pill.locked {
+  border-color: rgba(143, 184, 214, .42);
+  color: var(--muted);
+  background: rgba(143, 184, 214, .06);
 }
 
 .timer-value {
@@ -403,6 +375,12 @@ h2 {
   box-shadow: 0 0 20px rgba(255, 0, 51, .42);
 }
 
+.port-card .btn-red,
+.modal-actions .btn-red,
+.test-buttons .btn-red {
+  margin-top: 0;
+}
+
 .btn-blue {
   border-color: var(--blue);
   color: var(--blue);
@@ -438,6 +416,92 @@ h2 {
 
 .message.error { color: #ff607b; }
 .message.ok { color: var(--green); }
+
+.payment-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.payment-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(1, 5, 12, .82);
+  backdrop-filter: blur(5px);
+}
+
+.payment-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: 24px;
+}
+
+.modal-head {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.modal-head h1 {
+  text-align: left;
+  font-size: 28px;
+}
+
+.payment-readout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payment-readout > div {
+  min-width: 0;
+  border: 1px solid rgba(0, 212, 255, .28);
+  background: rgba(5, 13, 26, .62);
+  padding: 16px;
+}
+
+.payment-readout span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.payment-readout strong {
+  display: block;
+  margin-top: 8px;
+  color: white;
+  font-size: 32px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 16px rgba(0, 212, 255, .35);
+}
+
+.payment-readout div:first-child strong {
+  color: var(--amber);
+}
+
+.pulse-meta {
+  min-height: 20px;
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 128px;
+  gap: 10px;
+  align-items: center;
+}
 
 .login-page {
   display: grid;
@@ -594,6 +658,16 @@ input::placeholder {
   margin-bottom: 14px;
 }
 
+.sales-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sales-card strong {
+  color: var(--amber);
+}
+
 .stat-card {
   padding: 16px;
 }
@@ -637,6 +711,31 @@ input::placeholder {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin: 16px 0;
+}
+
+.rate-preview {
+  align-self: end;
+  min-height: 46px;
+  border: 1px solid rgba(0, 212, 255, .28);
+  background: rgba(5, 13, 26, .62);
+  padding: 10px 13px;
+}
+
+.rate-preview span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.rate-preview strong {
+  display: block;
+  margin-top: 4px;
+  color: white;
+  font-size: 22px;
+  line-height: 1;
+  text-shadow: 0 0 14px rgba(0, 212, 255, .35);
 }
 
 .checkline {
@@ -726,7 +825,8 @@ dd {
   }
 
   .ports-grid,
-  .status-grid {
+  .status-grid,
+  .sales-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -775,9 +875,9 @@ dd {
     font-size: 10px;
   }
 
-  .hero-grid,
   .ports-grid,
   .status-grid,
+  .sales-grid,
   .form-grid,
   .enable-row,
   .coin-buttons,
@@ -785,7 +885,6 @@ dd {
     grid-template-columns: 1fr;
   }
 
-  .credit-card,
   .setup-card,
   .pin-card,
   .info-card,
@@ -794,8 +893,17 @@ dd {
     padding: 16px;
   }
 
-  .coin-card {
-    text-align: left;
+  .payment-dialog {
+    padding: 20px 16px;
+  }
+
+  .payment-readout,
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-head h1 {
+    font-size: 24px;
   }
 
   .section-title {
