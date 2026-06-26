@@ -3,153 +3,273 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PISO CHARGE PRO</title>
+  <title>PISO CHARGE PRO Setup</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="grid-bg"></div>
   <main class="app-shell">
-    <section id="userPortal" class="screen user-screen">
-      <header class="topbar">
-        <div class="brand-block">
-          <span class="brand-mark">PCP</span>
-          <div>
-            <h1>PISO CHARGE PRO</h1>
-            <p id="apLabel">10.20.30.1</p>
+    <section id="userPortal" class="page user-page">
+      <header class="dash-header panel">
+        <div class="header-left">
+          <div class="brand brand-shell">
+            <img class="brand-logo" src="/portal_logo.png" alt="BYG-PISOTAB PRO">
+            <div>
+              <div class="brand-name">PISO CHARGE</div>
+              <div class="brand-pro">POWER STATION</div>
+            </div>
           </div>
         </div>
-        <a class="admin-link" href="/admin">ADMIN</a>
+        <a class="logout-btn admin-shortcut" href="/admin" title="Admin" aria-label="Admin">ADM</a>
       </header>
 
-      <section class="credit-panel">
-        <div>
-          <span class="eyebrow">AVAILABLE CREDIT</span>
+      <section class="hero-grid">
+        <article class="panel credit-card corner-card">
+          <div class="bar"></div>
+          <span class="kicker">AVAILABLE CREDIT</span>
           <strong id="creditValue">00:00</strong>
-        </div>
-        <div class="coin-box">
-          <span>COINS</span>
+          <small id="apLabel">PISO_CHARGE_PRO / 10.20.30.1</small>
+        </article>
+        <article class="coin-card">
+          <span>TOTAL PHP</span>
           <strong id="coinValue">0</strong>
-        </div>
+          <small id="coinMeta">Last coin: --</small>
+        </article>
       </section>
 
       <section id="portsGrid" class="ports-grid" aria-live="polite"></section>
 
-      <section class="action-row">
-        <button id="refreshBtn" class="btn secondary" type="button">REFRESH STATUS</button>
+      <section class="action-row panel">
+        <button id="refreshBtn" class="btn btn-blue" type="button">REFRESH STATUS</button>
         <p id="userMsg" class="message"></p>
+      </section>
+
+      <section class="action-row panel bench-panel">
+        <div class="test-buttons coin-buttons">
+          <button class="btn btn-blue" type="button" data-sim-coin="1">SIM PHP 1</button>
+          <button class="btn btn-blue" type="button" data-sim-coin="5">SIM PHP 5</button>
+          <button class="btn btn-blue" type="button" data-sim-coin="10">SIM PHP 10</button>
+          <button class="btn btn-blue" type="button" data-sim-coin="20">SIM PHP 20</button>
+        </div>
+        <div class="test-buttons">
+          <button class="btn btn-red" type="button" data-test-time-port="1">TEST TIME PORT 1</button>
+          <button class="btn btn-red" type="button" data-test-time-port="2">TEST TIME PORT 2</button>
+          <button class="btn btn-red" type="button" data-test-time-port="3">TEST TIME PORT 3</button>
+        </div>
+        <p id="simMsg" class="message"></p>
       </section>
     </section>
 
-    <section id="adminLogin" class="screen login-screen hidden">
-      <form id="loginForm" class="panel login-card" method="post" action="/admin/api/login">
-        <img class="developer-photo" src="/developer.png" alt="Developer">
-        <span class="eyebrow">LOCAL ADMIN</span>
-        <h2>PISO CHARGE PRO</h2>
+    <section id="adminLogin" class="page login-page hidden">
+      <form id="loginForm" class="panel login-card corner-card" method="post" action="/admin/api/login">
+        <div class="bar"></div>
+        <div class="brand brand-shell login-brand">
+          <img class="brand-logo" src="/portal_logo.png" alt="BYG-PISOTAB PRO">
+          <div>
+            <div class="brand-name">PISO CHARGE</div>
+            <div class="brand-pro">ADMIN SETUP</div>
+          </div>
+        </div>
+
+        <h1>SYSTEM ACCESS</h1>
+        <p class="muted">Enter local charging station credentials</p>
+
         <label for="username">USERNAME</label>
-        <input id="username" name="username" autocomplete="username" value="admin" required>
+        <input id="username" name="username" autocomplete="username" value="admin" placeholder="admin" required>
+
         <label for="password">PASSWORD</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="admin" required>
-        <button class="btn primary wide" type="submit">LOGIN</button>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Portal password" required>
+
+        <button class="btn btn-red" type="submit">LOGIN TO SYSTEM</button>
         <p id="loginMsg" class="message"></p>
+        <div class="version">PISO CHARGE PRO - ESP8266 PORTAL</div>
       </form>
     </section>
 
-    <section id="adminDashboard" class="screen admin-screen hidden">
-      <header class="topbar">
-        <div class="brand-block">
-          <span class="brand-mark">PCP</span>
-          <div>
-            <h1>PISO CHARGE PRO</h1>
-            <p>ADMIN DASHBOARD</p>
+    <section id="adminDashboard" class="page dashboard-page hidden">
+      <header class="dash-header panel">
+        <div class="header-left">
+          <button id="menuBtn" class="menu-btn" type="button" aria-label="Open settings menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div class="brand brand-shell">
+            <img class="brand-logo" src="/portal_logo.png" alt="BYG-PISOTAB PRO">
+            <div>
+              <div class="brand-name">PISO CHARGE</div>
+              <div class="brand-pro">ADMIN SETUP</div>
+            </div>
           </div>
         </div>
         <div class="top-actions">
-          <a class="admin-link" href="/">USER</a>
-          <button id="logoutBtn" class="admin-link button-link" type="button">OUT</button>
+          <a class="logout-btn admin-shortcut" href="/" title="User portal" aria-label="User portal">USR</a>
+          <button id="logoutBtn" class="logout-btn" type="button" title="Logout" aria-label="Logout">OUT</button>
         </div>
       </header>
 
-      <section class="admin-grid">
-        <article class="panel status-card">
-          <div class="section-head">
-            <span class="eyebrow">DEVICE STATUS</span>
-            <button id="adminRefreshBtn" class="btn small secondary" type="button">REFRESH</button>
-          </div>
-          <dl class="status-list">
-            <dt>IP</dt><dd id="adminIp">...</dd>
-            <dt>Uptime</dt><dd id="adminUptime">...</dd>
-            <dt>Coin pulses</dt><dd id="adminCoins">0</dd>
-            <dt>Credit</dt><dd id="adminCredit">00:00</dd>
-            <dt>Relay states</dt><dd id="adminRelays">...</dd>
-            <dt>Port timers</dt><dd id="adminTimers">...</dd>
-          </dl>
-        </article>
+      <div id="drawerBackdrop" class="drawer-backdrop"></div>
 
-        <article class="panel test-card">
-          <span class="eyebrow">MANUAL RELAY TEST</span>
-          <div class="test-buttons">
-            <button class="btn secondary" type="button" data-test-relay="1">TEST RELAY 1</button>
-            <button class="btn secondary" type="button" data-test-relay="2">TEST RELAY 2</button>
-            <button class="btn secondary" type="button" data-test-relay="3">TEST RELAY 3</button>
-          </div>
-          <p id="testMsg" class="message"></p>
-        </article>
+      <div class="admin-layout">
+        <nav id="adminNav" class="admin-nav panel" aria-label="Admin settings pages">
+          <div class="nav-kicker">SETTINGS</div>
+          <button class="nav-link active" type="button" data-page="statusPage">Device Status</button>
+          <button class="nav-link" type="button" data-page="portsPage">Ports</button>
+          <button class="nav-link" type="button" data-page="pinsPage">Pin Configuration</button>
+          <button class="nav-link" type="button" data-page="networkPage">Access Point</button>
+          <button class="nav-link" type="button" data-page="actionsPage">Device Actions</button>
+        </nav>
 
-        <article class="panel settings-card">
-          <div class="section-head">
-            <span class="eyebrow">CONFIGURATION</span>
-            <button id="resetBtn" class="btn small danger" type="button">RESET DEFAULTS</button>
-          </div>
+        <div class="dashboard-main">
+          <section id="statusPage" class="page-panel active">
+            <section class="status-grid">
+              <article class="stat-card">
+                <span>IP ADDRESS</span>
+                <strong id="adminIp">...</strong>
+              </article>
+              <article class="stat-card">
+                <span>UPTIME</span>
+                <strong id="adminUptime">...</strong>
+              </article>
+              <article class="stat-card">
+                <span>COIN VALUE</span>
+                <strong id="adminCoins">0</strong>
+              </article>
+              <article class="stat-card">
+                <span>CREDIT</span>
+                <strong id="adminCredit">00:00</strong>
+              </article>
+            </section>
 
-          <form id="settingsForm" method="post" action="/admin/api/save-settings">
-            <div class="form-grid">
-              <div>
-                <label for="apSsid">AP SSID</label>
-                <input id="apSsid" name="apSsid" required>
+            <article class="panel info-card">
+              <div class="section-title">
+                <div>
+                  <h2>Device Status</h2>
+                  <p class="muted">Live relay and timer state from the ESP8266.</p>
+                </div>
+                <button id="adminRefreshBtn" class="btn btn-blue" type="button">REFRESH</button>
               </div>
-              <div>
-                <label for="apPassword">AP PASSWORD</label>
-                <input id="apPassword" name="apPassword" type="password" placeholder="Leave blank to keep current">
-              </div>
-              <div>
-                <label for="secondsPerCoin">SECONDS PER COIN</label>
-                <input id="secondsPerCoin" name="secondsPerCoin" type="number" min="10" max="86400" required>
-              </div>
-              <div>
-                <label for="relayActiveMode">RELAY ACTIVE MODE</label>
-                <select id="relayActiveMode" name="relayActiveMode">
-                  <option value="LOW">ACTIVE LOW</option>
-                  <option value="HIGH">ACTIVE HIGH</option>
-                </select>
-              </div>
-              <div>
-                <label for="relay1Pin">RELAY 1 PIN</label>
-                <select id="relay1Pin" name="relay1Pin"></select>
-              </div>
-              <div>
-                <label for="relay2Pin">RELAY 2 PIN</label>
-                <select id="relay2Pin" name="relay2Pin"></select>
-              </div>
-              <div>
-                <label for="relay3Pin">RELAY 3 PIN</label>
-                <select id="relay3Pin" name="relay3Pin"></select>
-              </div>
-              <div>
-                <label for="coinPin">COIN INPUT PIN</label>
-                <select id="coinPin" name="coinPin"></select>
-              </div>
-            </div>
+              <dl>
+                <dt>Coin pulses</dt><dd id="adminCoinPulses">0</dd>
+                <dt>Last coin</dt><dd id="adminLastCoin">--</dd>
+                <dt>Relay states</dt><dd id="adminRelays">...</dd>
+                <dt>Port timers</dt><dd id="adminTimers">...</dd>
+              </dl>
+            </article>
+          </section>
 
-            <div class="enable-row">
-              <label class="checkline"><input id="port1Enabled" type="checkbox"> PORT 1 ENABLED</label>
-              <label class="checkline"><input id="port2Enabled" type="checkbox"> PORT 2 ENABLED</label>
-              <label class="checkline"><input id="port3Enabled" type="checkbox"> PORT 3 ENABLED</label>
-            </div>
+          <section id="portsPage" class="page-panel">
+            <article class="panel setup-card">
+              <h2>Port Controls</h2>
+              <p class="muted">Enable or disable each charging outlet.</p>
+              <div class="enable-row">
+                <label class="checkline"><input id="port1Enabled" type="checkbox"> PORT 1 ENABLED</label>
+                <label class="checkline"><input id="port2Enabled" type="checkbox"> PORT 2 ENABLED</label>
+                <label class="checkline"><input id="port3Enabled" type="checkbox"> PORT 3 ENABLED</label>
+              </div>
+              <div class="form-grid">
+                <div>
+                  <label for="secondsPerCoin">SECONDS PER PESO</label>
+                  <input id="secondsPerCoin" name="secondsPerCoin" type="number" min="10" max="86400" required form="settingsForm">
+                </div>
+                <div>
+                  <label for="relayActiveMode">RELAY ACTIVE MODE</label>
+                  <select id="relayActiveMode" name="relayActiveMode" form="settingsForm">
+                    <option value="LOW">ACTIVE LOW</option>
+                    <option value="HIGH">ACTIVE HIGH</option>
+                  </select>
+                </div>
+              </div>
+            </article>
 
-            <button class="btn primary wide" type="submit">SAVE SETTINGS</button>
-            <p id="settingsMsg" class="message"></p>
-          </form>
-        </article>
-      </section>
+            <article class="panel test-card">
+              <h2>Manual Relay Test</h2>
+              <p class="muted">Pulse a relay for quick hardware checking.</p>
+              <div class="test-buttons">
+                <button class="btn btn-blue" type="button" data-test-relay="1">TEST RELAY 1</button>
+                <button class="btn btn-blue" type="button" data-test-relay="2">TEST RELAY 2</button>
+                <button class="btn btn-blue" type="button" data-test-relay="3">TEST RELAY 3</button>
+              </div>
+              <p id="testMsg" class="message"></p>
+            </article>
+
+            <article class="panel test-card">
+              <h2>Coin / Time Simulation</h2>
+              <p class="muted">Use this while testing without a coin acceptor.</p>
+              <div class="test-buttons coin-buttons">
+                <button class="btn btn-blue" type="button" data-sim-coin="1">SIM PHP 1</button>
+                <button class="btn btn-blue" type="button" data-sim-coin="5">SIM PHP 5</button>
+                <button class="btn btn-blue" type="button" data-sim-coin="10">SIM PHP 10</button>
+                <button class="btn btn-blue" type="button" data-sim-coin="20">SIM PHP 20</button>
+              </div>
+              <div class="test-buttons">
+                <button class="btn btn-red" type="button" data-test-time-port="1">ADD TEST TIME PORT 1</button>
+                <button class="btn btn-red" type="button" data-test-time-port="2">ADD TEST TIME PORT 2</button>
+                <button class="btn btn-red" type="button" data-test-time-port="3">ADD TEST TIME PORT 3</button>
+              </div>
+              <p id="adminSimMsg" class="message"></p>
+            </article>
+          </section>
+
+          <section id="pinsPage" class="page-panel">
+            <article class="panel pin-card">
+              <h2>Pin Configuration</h2>
+              <p class="muted">Choose safe ESP8266 pins for the three relays and coin pulse input.</p>
+              <div class="form-grid">
+                <div>
+                  <label for="relay1Pin">RELAY 1 PIN</label>
+                  <select id="relay1Pin" name="relay1Pin" form="settingsForm"></select>
+                </div>
+                <div>
+                  <label for="relay2Pin">RELAY 2 PIN</label>
+                  <select id="relay2Pin" name="relay2Pin" form="settingsForm"></select>
+                </div>
+                <div>
+                  <label for="relay3Pin">RELAY 3 PIN</label>
+                  <select id="relay3Pin" name="relay3Pin" form="settingsForm"></select>
+                </div>
+                <div>
+                  <label for="coinPin">COIN INPUT PIN</label>
+                  <select id="coinPin" name="coinPin" form="settingsForm"></select>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section id="networkPage" class="page-panel">
+            <article class="panel setup-card corner-card">
+              <div class="section-title">
+                <div>
+                  <h2>Access Point</h2>
+                  <p class="muted">Set the charging station hotspot name and password.</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div>
+                  <label for="apSsid">AP SSID</label>
+                  <input id="apSsid" name="apSsid" required form="settingsForm">
+                </div>
+                <div>
+                  <label for="apPassword">AP PASSWORD</label>
+                  <input id="apPassword" name="apPassword" type="password" placeholder="Leave blank to keep current" form="settingsForm">
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section id="actionsPage" class="page-panel">
+            <article class="panel actions-card">
+              <h2>Device Actions</h2>
+              <p class="muted">Save configuration or restore factory defaults.</p>
+              <form id="settingsForm" method="post" action="/admin/api/save-settings">
+                <button class="btn btn-blue wide" type="submit">SAVE SETTINGS AND REBOOT</button>
+              </form>
+              <button id="resetBtn" class="btn btn-ghost danger wide" type="button">RESET DEFAULTS</button>
+              <p id="settingsMsg" class="message"></p>
+            </article>
+          </section>
+        </div>
+      </div>
     </section>
   </main>
   <script src="/app.js"></script>

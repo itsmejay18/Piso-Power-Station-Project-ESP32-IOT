@@ -8,9 +8,11 @@ static const char* BOARD_NAME = "ESP8266_NODEMCU";
 static const char* DEFAULT_AP_SSID = "PISO_CHARGE_PRO";
 static const char* DEFAULT_AP_PASS = "12345678";
 static const char* DEFAULT_ADMIN_PASS = "admin";
+static const bool DEFAULT_RELAY_ACTIVE_LOW = false;
 static const char* CONFIG_PATH = "/config.json";
 static const byte DNS_PORT = 53;
-static const unsigned long COIN_DEBOUNCE_MS = 60;
+static const unsigned long COIN_DEBOUNCE_MS = 20;
+static const unsigned long COIN_TRAIN_TIMEOUT_MS = 1100;
 static const unsigned long RELAY_TEST_MS = 900;
 
 IPAddress AP_IP(10, 20, 30, 1);
@@ -54,10 +56,14 @@ PortState ports[3];
 
 uint32_t creditSeconds = 0;
 uint32_t coinPulses = 0;
+uint32_t coinValueTotal = 0;
 unsigned long lastTimerMs = 0;
 bool coinRawActive = false;
 bool coinStableActive = false;
 unsigned long coinRawChangedMs = 0;
+uint8_t pendingCoinPulses = 0;
+uint8_t lastCoinValue = 0;
+unsigned long lastCoinPulseMs = 0;
 bool rebootPending = false;
 unsigned long rebootAtMs = 0;
 bool relayTestActive[3] = {false, false, false};
@@ -162,7 +168,7 @@ void setDefaultSettings() {
   settings.relayPins[1] = "D2";
   settings.relayPins[2] = "D5";
   settings.coinPin = "D6";
-  settings.relayActiveLow = true;
+  settings.relayActiveLow = DEFAULT_RELAY_ACTIVE_LOW;
   settings.secondsPerCoin = 300;
   settings.portEnabled[0] = true;
   settings.portEnabled[1] = true;
@@ -319,7 +325,7 @@ bool loadSettings() {
   settings.relayPins[1] = readJsonString(json, "relay2Pin");
   settings.relayPins[2] = readJsonString(json, "relay3Pin");
   settings.coinPin = readJsonString(json, "coinPin");
-  settings.relayActiveLow = readJsonBool(json, "relayActiveLow", true);
+  settings.relayActiveLow = readJsonBool(json, "relayActiveLow", DEFAULT_RELAY_ACTIVE_LOW);
   settings.secondsPerCoin = (uint32_t)readJsonInt(json, "secondsPerCoin", 300);
   settings.portEnabled[0] = readJsonBool(json, "port1Enabled", true);
   settings.portEnabled[1] = readJsonBool(json, "port2Enabled", true);
@@ -380,8 +386,10 @@ void configureIoPins() {
   for (int i = 0; i < 3; i++) {
     ports[i].remaining = 0;
     ports[i].relayOn = false;
-    pinMode(relayGpio(i), OUTPUT);
-    digitalWrite(relayGpio(i), relayOffLevel());
+    uint8_t pin = relayGpio(i);
+    digitalWrite(pin, relayOffLevel());
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, relayOffLevel());
   }
   pinMode(coinGpio(), INPUT_PULLUP);
   coinRawActive = digitalRead(coinGpio()) == LOW;
@@ -398,13 +406,70 @@ void configureIoPins() {
   Serial.println(settings.coinPin);
 }
 
-void addCoinCredit() {
-  coinPulses++;
-  creditSeconds += settings.secondsPerCoin;
-  Serial.print("COIN_PULSE_DETECTED:");
-  Serial.println(coinPulses);
+bool isSupportedCoinValue(uint8_t value) {
+  return value == 1 || value == 5 || value == 10 || value == 20;
+}
+
+void finalizeCoinTrain() {
+  if (pendingCoinPulses == 0) return;
+
+  uint8_t coinValue = pendingCoinPulses;
+  pendingCoinPulses = 0;
+
+  if (!isSupportedCoinValue(coinValue)) {
+    lastCoinValue = 0;
+    Serial.print("COIN_VALUE_REJECTED_PULSES:");
+    Serial.println(coinValue);
+    return;
+  }
+
+  lastCoinValue = coinValue;
+  coinValueTotal += coinValue;
+  uint32_t addedSeconds = (uint32_t)coinValue * settings.secondsPerCoin;
+  creditSeconds += addedSeconds;
+
+  Serial.print("COIN_VALUE_ACCEPTED:");
+  Serial.println(coinValue);
+  Serial.print("COIN_TIME_ADDED_SECONDS:");
+  Serial.println(addedSeconds);
   Serial.print("CREDIT_SECONDS:");
   Serial.println(creditSeconds);
+}
+
+void addCoinValueCredit(uint8_t coinValue) {
+  if (!isSupportedCoinValue(coinValue)) return;
+  lastCoinValue = coinValue;
+  coinValueTotal += coinValue;
+  coinPulses += coinValue;
+  uint32_t addedSeconds = (uint32_t)coinValue * settings.secondsPerCoin;
+  creditSeconds += addedSeconds;
+  Serial.print("SIMULATED_COIN_VALUE:");
+  Serial.println(coinValue);
+  Serial.print("CREDIT_SECONDS:");
+  Serial.println(creditSeconds);
+}
+
+bool addTestTimeToPort(int index, uint8_t pesoValue) {
+  if (index < 0 || index > 2) return false;
+  if (!settings.portEnabled[index]) return false;
+  if (!isSupportedCoinValue(pesoValue)) return false;
+  ports[index].remaining += (uint32_t)pesoValue * settings.secondsPerCoin;
+  syncRelayState(index);
+  Serial.print("PORT_");
+  Serial.print(index + 1);
+  Serial.print("_TEST_TIME_ADDED_PHP:");
+  Serial.println(pesoValue);
+  return true;
+}
+
+void registerCoinPulse() {
+  coinPulses++;
+  if (pendingCoinPulses < 30) pendingCoinPulses++;
+  lastCoinPulseMs = millis();
+  Serial.print("COIN_PULSE_DETECTED:");
+  Serial.println(coinPulses);
+  Serial.print("PENDING_COIN_PULSES:");
+  Serial.println(pendingCoinPulses);
 }
 
 void updateCoinInput() {
@@ -416,7 +481,13 @@ void updateCoinInput() {
   }
   if (rawActive != coinStableActive && now - coinRawChangedMs >= COIN_DEBOUNCE_MS) {
     coinStableActive = rawActive;
-    if (coinStableActive) addCoinCredit();
+    if (coinStableActive) registerCoinPulse();
+  }
+}
+
+void updateCoinTrain() {
+  if (pendingCoinPulses > 0 && millis() - lastCoinPulseMs >= COIN_TRAIN_TIMEOUT_MS) {
+    finalizeCoinTrain();
   }
 }
 
@@ -470,6 +541,9 @@ String statusJson() {
   String body = "{";
   body += "\"creditSeconds\":"; body += String(creditSeconds); body += ",";
   body += "\"coinPulses\":"; body += String(coinPulses); body += ",";
+  body += "\"coinValueTotal\":"; body += String(coinValueTotal); body += ",";
+  body += "\"lastCoinValue\":"; body += String(lastCoinValue); body += ",";
+  body += "\"pendingCoinPulses\":"; body += String(pendingCoinPulses); body += ",";
   body += "\"ports\":[";
   for (int i = 0; i < 3; i++) {
     if (i > 0) body += ",";
@@ -665,7 +739,7 @@ void handleAdminSaveSettings() {
     return;
   }
   if (next.secondsPerCoin < 10 || next.secondsPerCoin > 86400UL) {
-    sendJson(400, "{\"ok\":false,\"message\":\"Seconds per coin must be 10 to 86400\"}");
+    sendJson(400, "{\"ok\":false,\"message\":\"Seconds per peso must be 10 to 86400\"}");
     return;
   }
 
@@ -708,6 +782,41 @@ void handleAdminTestRelay() {
   sendJson(200, statusJson());
 }
 
+void handleApiSimulateCoin() {
+  int value = requestInt("value", 0);
+  if (!isSupportedCoinValue((uint8_t)value)) {
+    sendJson(400, "{\"ok\":false,\"message\":\"Choose PHP 1, 5, 10, or 20\"}");
+    return;
+  }
+  addCoinValueCredit((uint8_t)value);
+  sendJson(200, statusJson());
+}
+
+void handleApiAddTestTime() {
+  int port = requestInt("port", 0);
+  int value = requestInt("value", 1);
+  int index = port - 1;
+  if (index < 0 || index > 2) {
+    sendJson(400, "{\"ok\":false,\"message\":\"Choose Port 1, 2, or 3\"}");
+    return;
+  }
+  if (!addTestTimeToPort(index, (uint8_t)value)) {
+    sendJson(400, "{\"ok\":false,\"message\":\"Port disabled or invalid test value\"}");
+    return;
+  }
+  sendJson(200, statusJson());
+}
+
+void handleAdminSimulateCoin() {
+  if (!requireAdmin()) return;
+  handleApiSimulateCoin();
+}
+
+void handleAdminAddTestTime() {
+  if (!requireAdmin()) return;
+  handleApiAddTestTime();
+}
+
 void handleNotFound() {
   if (server.method() == HTTP_GET && serveFile(server.uri())) return;
   if (server.method() == HTTP_GET) {
@@ -726,12 +835,16 @@ void setupRoutes() {
   server.on("/api/status", HTTP_GET, handleApiStatus);
   server.on("/api/start", HTTP_POST, handleApiStart);
   server.on("/api/add-credit-to-port", HTTP_POST, handleApiAddCreditToPort);
+  server.on("/api/simulate-coin", HTTP_POST, handleApiSimulateCoin);
+  server.on("/api/add-test-time", HTTP_POST, handleApiAddTestTime);
   server.on("/admin/api/login", HTTP_POST, handleAdminLogin);
   server.on("/admin/api/logout", HTTP_POST, handleAdminLogout);
   server.on("/admin/api/settings", HTTP_GET, handleAdminGetSettings);
   server.on("/admin/api/save-settings", HTTP_POST, handleAdminSaveSettings);
   server.on("/admin/api/reset-settings", HTTP_POST, handleAdminResetSettings);
   server.on("/admin/api/test-relay", HTTP_POST, handleAdminTestRelay);
+  server.on("/admin/api/simulate-coin", HTTP_POST, handleAdminSimulateCoin);
+  server.on("/admin/api/add-test-time", HTTP_POST, handleAdminAddTestTime);
   server.onNotFound(handleNotFound);
 }
 
@@ -779,6 +892,7 @@ void loop() {
   dnsServer.processNextRequest();
   server.handleClient();
   updateCoinInput();
+  updateCoinTrain();
   updateTimers();
   updateRelayTests();
 

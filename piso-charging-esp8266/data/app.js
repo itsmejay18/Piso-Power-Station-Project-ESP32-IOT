@@ -8,6 +8,7 @@
   ];
   var userTimer = null;
   var adminTimer = null;
+  var activeAdminPage = "statusPage";
 
   function qs(id) {
     return document.getElementById(id);
@@ -18,6 +19,21 @@
     if (!el) return;
     el.textContent = text || "";
     el.className = "message" + (type ? " " + type : "");
+  }
+
+  function setSimMsg(text, type) {
+    setMsg("simMsg", text, type);
+    setMsg("adminSimMsg", text, type);
+  }
+
+  function actionValue(target, attr) {
+    while (target && target !== document) {
+      if (target.getAttribute && target.hasAttribute(attr)) {
+        return target.getAttribute(attr);
+      }
+      target = target.parentNode;
+    }
+    return null;
   }
 
   function encodeForm(data) {
@@ -72,6 +88,28 @@
     ["userPortal", "adminLogin", "adminDashboard"].forEach(function (screenId) {
       qs(screenId).classList.toggle("hidden", screenId !== id);
     });
+    if (id !== "adminDashboard") setNavOpen(false);
+  }
+
+  function setNavOpen(open) {
+    var menuBtn = qs("menuBtn");
+    document.body.classList.toggle("nav-open", !!open);
+    if (menuBtn) menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function showAdminPage(pageId, keepDrawerState) {
+    var pagePanels = document.querySelectorAll(".page-panel");
+    var navLinks = document.querySelectorAll(".nav-link");
+    activeAdminPage = pageId || "statusPage";
+
+    for (var p = 0; p < pagePanels.length; p++) {
+      pagePanels[p].classList.toggle("active", pagePanels[p].id === activeAdminPage);
+    }
+    for (var n = 0; n < navLinks.length; n++) {
+      navLinks[n].classList.toggle("active", navLinks[n].getAttribute("data-page") === activeAdminPage);
+    }
+    if (!keepDrawerState) setNavOpen(false);
+    window.scrollTo(0, 0);
   }
 
   function renderPorts(status) {
@@ -84,24 +122,27 @@
       card.innerHTML =
         '<div class="port-head">' +
           '<div class="port-title">PORT ' + port.id + '</div>' +
-          '<div class="status-pill ' + (active ? "active" : "") + '">' + (active ? "ACTIVE" : "READY") + '</div>' +
+          '<div class="status-pill ' + (active ? "active" : "") + '">' + (active ? "ACTIVE" : (port.enabled ? "READY" : "OFF")) + '</div>' +
         '</div>' +
         '<div class="timer-value">' + fmtTime(port.remaining) + '</div>' +
         '<div class="port-actions">' +
-          '<button class="btn primary" type="button" data-start-port="' + port.id + '">START PORT ' + port.id + '</button>' +
-          '<button class="btn secondary" type="button" data-add-port="' + port.id + '">ADD CREDIT</button>' +
+          '<button class="btn btn-red" type="button" data-start-port="' + port.id + '">START PORT ' + port.id + '</button>' +
+          '<button class="btn btn-blue" type="button" data-add-port="' + port.id + '">ADD CREDIT</button>' +
         '</div>';
       var startBtn = card.querySelector("[data-start-port]");
       var addBtn = card.querySelector("[data-add-port]");
-      startBtn.disabled = !port.enabled || status.creditSeconds <= 0;
-      addBtn.disabled = !port.enabled || status.creditSeconds <= 0;
+      startBtn.disabled = !port.enabled;
+      addBtn.disabled = !port.enabled;
       grid.appendChild(card);
     });
   }
 
   function renderUserStatus(status) {
     qs("creditValue").textContent = fmtTime(status.creditSeconds);
-    qs("coinValue").textContent = status.coinPulses || 0;
+    qs("coinValue").textContent = status.coinValueTotal || 0;
+    qs("coinMeta").textContent = status.pendingCoinPulses > 0
+      ? ("Reading " + status.pendingCoinPulses + " pulses...")
+      : ("Last coin: " + (status.lastCoinValue ? ("PHP " + status.lastCoinValue) : "--"));
     qs("apLabel").textContent = (status.apSsid || "PISO_CHARGE_PRO") + " / " + (status.ip || "10.20.30.1");
     renderPorts(status);
   }
@@ -137,6 +178,28 @@
     });
   }
 
+  function simulateCoin(value) {
+    setSimMsg("Adding simulated PHP " + value + "...", "");
+    post("/api/simulate-coin", {value: value}).then(function (status) {
+      renderUserStatus(status);
+      renderAdminStatus(status);
+      setSimMsg("Simulated PHP " + value + " added to available credit.", "ok");
+    }).catch(function (err) {
+      setSimMsg(err.message || "Coin simulation failed.", "error");
+    });
+  }
+
+  function addTestTime(port) {
+    setSimMsg("Adding test time to Port " + port + "...", "");
+    post("/api/add-test-time", {port: port, value: 1}).then(function (status) {
+      renderUserStatus(status);
+      renderAdminStatus(status);
+      setSimMsg("Port " + port + " test time added. Relay should be ON.", "ok");
+    }).catch(function (err) {
+      setSimMsg(err.message || "Test time failed.", "error");
+    });
+  }
+
   function fillPinSelects() {
     ["relay1Pin", "relay2Pin", "relay3Pin", "coinPin"].forEach(function (id) {
       var select = qs(id);
@@ -153,8 +216,12 @@
   function renderAdminStatus(status) {
     qs("adminIp").textContent = status.ip || "10.20.30.1";
     qs("adminUptime").textContent = status.uptimeText || fmtTime(status.uptime);
-    qs("adminCoins").textContent = status.coinPulses || 0;
+    qs("adminCoins").textContent = "PHP " + (status.coinValueTotal || 0);
     qs("adminCredit").textContent = fmtTime(status.creditSeconds);
+    qs("adminCoinPulses").textContent = status.coinPulses || 0;
+    qs("adminLastCoin").textContent = status.pendingCoinPulses > 0
+      ? ("Reading " + status.pendingCoinPulses + " pulses")
+      : (status.lastCoinValue ? ("PHP " + status.lastCoinValue) : "--");
     qs("adminRelays").textContent = status.ports.map(function (p) {
       return "R" + p.id + ":" + (p.active ? "ON" : "OFF");
     }).join("  ");
@@ -171,7 +238,7 @@
     qs("apSsid").value = data.apSsid || "PISO_CHARGE_PRO";
     qs("apPassword").value = "";
     qs("secondsPerCoin").value = data.secondsPerCoin || 300;
-    qs("relayActiveMode").value = data.relayActiveMode || "LOW";
+    qs("relayActiveMode").value = data.relayActiveMode || "HIGH";
     qs("relay1Pin").value = data.relay1Pin || "D1";
     qs("relay2Pin").value = data.relay2Pin || "D2";
     qs("relay3Pin").value = data.relay3Pin || "D5";
@@ -183,6 +250,7 @@
 
   function loadAdmin() {
     showOnly("adminDashboard");
+    showAdminPage(activeAdminPage, true);
     fillPinSelects();
     api("/admin/api/settings").then(function (data) {
       populateSettings(data);
@@ -251,11 +319,15 @@
   }
 
   document.addEventListener("click", function (event) {
-    var start = event.target.getAttribute("data-start-port");
-    var add = event.target.getAttribute("data-add-port");
-    var test = event.target.getAttribute("data-test-relay");
+    var start = actionValue(event.target, "data-start-port");
+    var add = actionValue(event.target, "data-add-port");
+    var test = actionValue(event.target, "data-test-relay");
+    var simCoin = actionValue(event.target, "data-sim-coin");
+    var testTime = actionValue(event.target, "data-test-time-port");
     if (start) startPort(start);
     if (add) addCreditToPort(add);
+    if (simCoin) simulateCoin(simCoin);
+    if (testTime) addTestTime(testTime);
     if (test) {
       setMsg("testMsg", "Testing Relay " + test + "...", "");
       post("/admin/api/test-relay", {relay: test}).then(function (status) {
@@ -308,6 +380,25 @@
       history.replaceState(null, "", "/admin/login");
       showOnly("adminLogin");
     });
+  });
+
+  qs("menuBtn").addEventListener("click", function () {
+    setNavOpen(!document.body.classList.contains("nav-open"));
+  });
+
+  qs("drawerBackdrop").addEventListener("click", function () {
+    setNavOpen(false);
+  });
+
+  var navLinks = document.querySelectorAll(".nav-link");
+  for (var n = 0; n < navLinks.length; n++) {
+    navLinks[n].addEventListener("click", function () {
+      showAdminPage(this.getAttribute("data-page"), false);
+    });
+  }
+
+  window.addEventListener("resize", function () {
+    if (window.innerWidth > 880) setNavOpen(false);
   });
 
   if (location.pathname.indexOf("/admin") === 0) {

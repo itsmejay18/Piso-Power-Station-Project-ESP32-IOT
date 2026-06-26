@@ -2,7 +2,7 @@
 
 ESP8266 Access Point portal firmware for a coin-operated piso charging station.
 
-The ESP8266 runs offline in AP mode only. It does not connect to the internet. A coin pulse adds charging time, and the user assigns available credit to Port 1, Port 2, or Port 3 from `http://10.20.30.1`.
+The ESP8266 runs offline in AP mode only. It does not connect to the internet. The coin input reads an active-LOW pulse train from the coin acceptor or Allan timer, then the user assigns available credit to Port 1, Port 2, or Port 3 from `http://10.20.30.1`.
 
 ## Default Access
 
@@ -27,7 +27,22 @@ The ESP8266 runs offline in AP mode only. It does not connect to the internet. A
 
 Avoid using boot-sensitive pins for relays: D3/GPIO0, D4/GPIO2, and D8/GPIO15.
 
-Relay modules are initialized OFF during boot. Default relay mode is active LOW.
+Relay modules are initialized OFF during boot. Default relay mode is active HIGH, so relays energize only when paid time is assigned to a port or during manual relay test.
+
+## Coin Reading
+
+The coin input groups pulses into one coin after the pulse train stops. Supported denominations:
+
+| Pulses read | Coin value |
+| --- | --- |
+| 1 pulse | PHP 1 |
+| 5 pulses | PHP 5 |
+| 10 pulses | PHP 10 |
+| 20 pulses | PHP 20 |
+
+The admin setting `SECONDS PER PESO` controls the time multiplier. For example, `300` means PHP 1 adds 5 minutes, PHP 5 adds 25 minutes, PHP 10 adds 50 minutes, and PHP 20 adds 100 minutes.
+
+For bench testing without a working coin acceptor, use `SIM PHP 1/5/10/20` on the user page to add available credit. The `TEST TIME PORT 1/2/3` buttons add one peso worth of time directly to a relay output.
 
 ## Portal Files
 
@@ -36,6 +51,7 @@ LittleFS serves:
 - `data/index.html`
 - `data/style.css`
 - `data/app.js`
+- `data/portal_logo.png`
 - `data/developer.png`
 
 Upload the filesystem after flashing firmware:
@@ -102,6 +118,9 @@ Returns:
 {
   "creditSeconds": 300,
   "coinPulses": 1,
+  "coinValueTotal": 1,
+  "lastCoinValue": 1,
+  "pendingCoinPulses": 0,
   "ports": [
     {"id": 1, "enabled": true, "active": true, "remaining": 123},
     {"id": 2, "enabled": true, "active": false, "remaining": 0},
